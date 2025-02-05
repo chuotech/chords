@@ -22,7 +22,7 @@ def get_chords(midi_stream):
             chords.append(element)
     
     for c in chords:
-        print(c)
+        print(str(c)+" ~~ "+str(c.pitchedCommonName))
 
 # def get_chord()
 def get_etimated_tempo(midi_file_pm):
