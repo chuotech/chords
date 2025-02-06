@@ -97,17 +97,22 @@ class MIDI_Stream:
     
     def get_notes(self):
         notes = []
-        for instrument in midi_file_pm.instruments:
+        for instrument in self.midi_stream.instruments:
             for note in instrument.notes:
                 notes.append({"pitch": note.pitch, "onset": note.start, "offset": note.end})
+        pprint.pp(notes)
         return notes
     
     def get_full_chord_list(self):
-        beats_total = int((tempo/60)*self.duration)
-        quarter_length = self.duration/beats_total
+        # print(self.duration)
+        # beats_total = int((self.get_tempo()/60)*self.duration)
+        beats_total = int((self.get_tempo()/60)*8)
+        # quarter_length = self.duration/beats_total
+        quarter_length = 8/beats_total
         sixteenth = quarter_length/4
+        notes = self.get_notes()
         # print(beats_total)
-        chord_list = [beats_total]
+        chord_list = []
         # curr_note = notes[0]
         curr_highest_pitch = 0
         curr_lowest_pitch = 10000
@@ -125,28 +130,32 @@ class MIDI_Stream:
                 if notes[i]["pitch"] < curr_lowest_pitch:
                     curr_lowest = notes[i]["onset"]
                     curr_lowest_pitch = notes[i]["pitch"]
-                print(curr_highest, curr_lowest)
                 i += 1
-            chord_list.append((chord.Chord(curr_chord).pitchedCommonName, "quarter note "+str(interval + 1), str(get_strum(curr_lowest, curr_highest))))
+            chord_list.append((chord.Chord(curr_chord).pitchedCommonName, "quarter note "+str(interval + 1), str(self.get_strum(curr_lowest, curr_highest))))
             # prev_chord = chord.Chord(curr_chord).pitchedCommonName
             curr_max_interval_length += quarter_length
             curr_lowest = 0
             curr_highest = 0
-            if i < len(notes) and curr_max_interval_length > notes[i]["onset"]:
+            if i < len(notes) and curr_max_interval_length >= notes[i]["onset"]:
                 curr_chord = []
                 curr_highest = 0
                 curr_lowest = 100000
                 curr_highest_pitch = 0
                 curr_lowest_pitch = 10000
+        pprint.pp(chord_list) #remove for lactency
         return chord_list
     
-    def get_strum(lowest, highest):
+    def get_strum(self, lowest, highest):
         if highest > lowest:
             return "DOWN"
         elif lowest > highest:
             return "UP"
         else:
             return "HOLD"
+
+midi_path = "strum_fixed.mid"
+midi_stream = MIDI_Stream(midi_path)
+chords = midi_stream.get_full_chord_list()
 # start = time.time()
 # midi_file = 'upstrumsdownstrumsohmy.mid'  # Replace with the path to your MIDI file
 # midi_file_pm = pretty_midi.PrettyMIDI(midi_file)
