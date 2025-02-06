@@ -152,10 +152,12 @@ class MIDI_Stream:
             return "UP"
         else:
             return "HOLD"
-
+start = time.time()
 midi_path = "strum_fixed.mid"
 midi_stream = MIDI_Stream(midi_path)
 chords = midi_stream.get_full_chord_list()
+end = time.time()
+print(end - start)
 # start = time.time()
 # midi_file = 'upstrumsdownstrumsohmy.mid'  # Replace with the path to your MIDI file
 # midi_file_pm = pretty_midi.PrettyMIDI(midi_file)
