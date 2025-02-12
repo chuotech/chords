@@ -83,7 +83,7 @@ class MIDI_Stream:
     def __init__(self, midi_file):
         self.midi_file = midi_file
         self.midi_stream = pretty_midi.PrettyMIDI(midi_file)
-        self.duration = self.midi_stream.get_end_time()
+        self.duration = round(self.midi_stream.get_end_time())
 
     def get_tempo(self):
         tempo_changes = self.midi_stream.get_tempo_changes()
@@ -99,17 +99,15 @@ class MIDI_Stream:
         notes = []
         for instrument in self.midi_stream.instruments:
             for note in instrument.notes:
-                notes.append({"pitch": note.pitch, "onset": note.start, "offset": note.end})
-        pprint.pp(notes)
+                notes.append({"pitch": note.pitch, "onset": round(note.start, 3), "offset": round(note.end, 3)})
+        # pprint.pp(notes)
         return notes
     
     def get_full_chord_list(self):
-        # print(self.duration)
-        # beats_total = int((self.get_tempo()/60)*self.duration)
-        beats_total = int((self.get_tempo()/60)*8)
-        # quarter_length = self.duration/beats_total
-        quarter_length = 8/beats_total
-        sixteenth = quarter_length/4
+        print(self.duration)
+        beats_total = int((self.get_tempo()/60)*self.duration)
+        eighth_length = self.duration/beats_total
+        thirty_second = eighth_length/4
         notes = self.get_notes()
         # print(beats_total)
         chord_list = []
@@ -119,7 +117,7 @@ class MIDI_Stream:
         curr_chord = []
         curr_highest = 0
         curr_lowest = 100000
-        curr_max_interval_length = quarter_length - sixteenth
+        curr_max_interval_length = eighth_length - thirty_second
         i = 0
         for interval in range(beats_total):
             while i < len(notes) and (notes[i]["onset"] <= curr_max_interval_length):
@@ -133,7 +131,7 @@ class MIDI_Stream:
                 i += 1
             chord_list.append((chord.Chord(curr_chord).pitchedCommonName, "quarter note "+str(interval + 1), str(self.get_strum(curr_lowest, curr_highest))))
             # prev_chord = chord.Chord(curr_chord).pitchedCommonName
-            curr_max_interval_length += quarter_length
+            curr_max_interval_length += eighth_length
             curr_lowest = 0
             curr_highest = 0
             if i < len(notes) and curr_max_interval_length >= notes[i]["onset"]:
@@ -153,7 +151,7 @@ class MIDI_Stream:
         else:
             return "HOLD"
 start = time.time()
-midi_path = "strum_fixed.mid"
+midi_path = "eighth_notes.mid"
 midi_stream = MIDI_Stream(midi_path)
 chords = midi_stream.get_full_chord_list()
 end = time.time()
