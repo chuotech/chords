@@ -56,7 +56,7 @@ class MIDI_Stream:
                     curr_lowest = notes[i]["onset"]
                     curr_lowest_pitch = notes[i]["pitch"]
                 i += 1
-            chord_list.append((chord.Chord(curr_chord).pitchedCommonName, "quarter note "+str(interval + 1), str(self.get_strum(curr_lowest, curr_highest))))
+            chord_list.append((chord.Chord(curr_chord).pitchedCommonName, "eighth note "+str(interval + 1), str(self.get_strum(curr_lowest, curr_highest))))
             # prev_chord = chord.Chord(curr_chord).pitchedCommonName
             curr_max_interval_length += eighth_length
             curr_lowest = 0
@@ -67,7 +67,7 @@ class MIDI_Stream:
                 curr_lowest = 100000
                 curr_highest_pitch = 0
                 curr_lowest_pitch = 10000
-        pprint.pp(chord_list) #remove for lactency
+        # pprint.pp(chord_list) #remove for lactency
         return chord_list
     
     def get_strum(self, lowest, highest):
@@ -77,6 +77,10 @@ class MIDI_Stream:
             return "UP"
         else:
             return "HOLD"
+    # def get_intervals(self):
+    #     interval_list = []
+        
+
 start = time.time()
 midi_path = "eighth_notes.mid"
 midi_stream = MIDI_Stream(midi_path)
