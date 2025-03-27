@@ -11,6 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog, QTableWidgetItem
+import pprint as pp
 import csv
 import ast
 
@@ -18,6 +19,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(833, 600)
+        self.result_array = []
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
@@ -204,6 +206,7 @@ class Ui_MainWindow(object):
         
     def print_table(self):
         """Prints the table as an array with columns as rows and rows as columns."""
+        output_array = []
         row_count = self.tableWidget.rowCount()
         col_count = self.tableWidget.columnCount()
 
@@ -217,7 +220,16 @@ class Ui_MainWindow(object):
         # Print the transposed array
         print("Transposed Table:")
         for row in transposed_data:
-            print(row)
+            # print(row)
+            for i in range(len(row)):
+                if i == 1 or i == 3:
+                    row[i] = float(row[i])
+                else:
+                    row[i] = int(row[i])
+            output_array.append(row)
+        self.result_array = output_array
+        pp.pp(output_array)
+        
 
     def array_to_table(self):
         input_text = self.array_input.text().strip()
