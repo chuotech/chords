@@ -25,7 +25,7 @@ class ClickableProgressBar(QtWidgets.QProgressBar):
             click_position = event.x()  # Get the clicked position on the progress bar
             total_width = self.width()  # Get the total width of the progress bar
             new_value = int((click_position / total_width) * self.maximum())  # Calculate the new value based on the click
-            self.setValue(new_value)
+            self.setValue(int(new_value))
 
             # After setting the progress bar value, call the function to update note info
             self.update_note_info(new_value)
