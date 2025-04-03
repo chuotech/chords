@@ -16,12 +16,10 @@ import pprint as pp
 import csv
 import ast
 class ClickableProgressBar(QtWidgets.QProgressBar):
-    note_selected = pyqtSignal(dict)  # Signal to emit note information
-
     def __init__(self, parent=None, input_array=None):
         super().__init__(parent)
         self.input_array = input_array if input_array else []
-
+    
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             click_position = event.x()  # Get the clicked position on the progress bar
@@ -37,8 +35,11 @@ class ClickableProgressBar(QtWidgets.QProgressBar):
         for note_info in self.input_array:
             # Check if the clicked time is within the start and end time of the note
             if note_info['start'] <= time_position <= (note_info['start'] + note_info['duration']):
-                # Emit the note info as a signal
-                self.note_selected.emit(note_info)
+                # Populate the line edits with the note's information
+                self.parent().note_line.setText(str(note_info['note_number']))
+                self.parent().duration_line.setText(str(note_info['duration']))
+                self.parent().speed_line.setText(str(note_info['speed']))
+                self.parent().start_line.setText(str(note_info['start']))
                 break  # Stop the loop once the note is found
 
 class Ui_MainWindow(object):
@@ -53,7 +54,6 @@ class Ui_MainWindow(object):
         self.progressBar.setGeometry(QtCore.QRect(110, 220, 601, 23))
         self.progressBar.setProperty("value", 0)
         self.progressBar.setObjectName("progressBar")
-        self.progressBar.note_selected.connect(self.update_note_info)
         self.current_time_label = QtWidgets.QLabel("0.0s", self.centralwidget)
         self.current_time_label.setGeometry(QtCore.QRect(720, 220, 50, 23))
         self.current_time_label.setObjectName("current_time_label")
@@ -136,6 +136,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.progressBar.valueChanged.connect(self.update_current_time_label)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -220,13 +221,6 @@ class Ui_MainWindow(object):
         
         # Set the current time label as a string
         self.current_time_label.setText(f"{current_value:.2f}s")
-    
-    def update_note_info(self, note_info):
-        # Populate the line edits with the note's information
-        self.note_line.setText(str(note_info['note_number']))
-        self.duration_line.setText(str(note_info['duration']))
-        self.speed_line.setText(str(note_info['speed']))
-        self.start_line.setText(str(note_info['start']))
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
