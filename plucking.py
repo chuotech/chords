@@ -9,104 +9,130 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QTableWidgetItem, QDialog, QWidget, QVBoxLayout, QPushButton
+import pretty_midi
 import pprint as pp
 import csv
 import ast
+class ClickableProgressBar(QtWidgets.QProgressBar):
+    note_selected = pyqtSignal(dict)  # Signal to emit note information
+
+    def __init__(self, parent=None, input_array=None):
+        super().__init__(parent)
+        self.input_array = input_array if input_array else []
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            click_position = event.x()  # Get the clicked position on the progress bar
+            total_width = self.width()  # Get the total width of the progress bar
+            new_value = int((click_position / total_width) * self.maximum())  # Calculate the new value based on the click
+            self.setValue(new_value)
+
+            # After setting the progress bar value, call the function to update note info
+            self.update_note_info(new_value)
+
+    def update_note_info(self, time_position):
+        # Loop through all the notes in input_array to find the one that matches the clicked time
+        for note_info in self.input_array:
+            # Check if the clicked time is within the start and end time of the note
+            if note_info['start'] <= time_position <= (note_info['start'] + note_info['duration']):
+                # Emit the note info as a signal
+                self.note_selected.emit(note_info)
+                break  # Stop the loop once the note is found
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(833, 600)
-        self.result_array = []
+        MainWindow.resize(788, 348)
+        self.input_array = []
         self.advanced_window = None
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(350, 50, 71, 16))
-        self.label.setObjectName("label")
-        self.array_input = QtWidgets.QLineEdit(self.centralwidget)
-        self.array_input.setGeometry(QtCore.QRect(230, 90, 321, 20))
-        self.array_input.setText("")
-        self.array_input.setObjectName("array_input")
-        self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(170, 90, 61, 16))
-        self.label_2.setObjectName("label_2")
-        self.submit_button = QtWidgets.QPushButton(self.centralwidget)
-        self.submit_button.setGeometry(QtCore.QRect(560, 90, 75, 23))
-        self.submit_button.setObjectName("submit_button")
-        self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
-        self.tableWidget.setGeometry(QtCore.QRect(65, 180, 701, 192))
-        self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(8)
-        self.tableWidget.setRowCount(4)
-        self.add_column_button = QtWidgets.QPushButton(self.centralwidget)
-        self.add_column_button.setGeometry(QtCore.QRect(400, 380, 100, 23))
-        self.add_column_button.setObjectName("add_column_button")
-        self.add_column_button.setText("Add Column")
-        self.add_column_button.clicked.connect(self.add_column)
-        self.remove_column_button = QtWidgets.QPushButton(self.centralwidget)
-        self.remove_column_button.setGeometry(QtCore.QRect(520, 380, 100, 23))
-        self.remove_column_button.setObjectName("remove_column_button")
-        self.remove_column_button.setText("Remove Column")
-        self.remove_column_button.clicked.connect(self.remove_column)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(0, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(1, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(2, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(3, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(0, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(1, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(2, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(3, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(4, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(5, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(6, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.tableWidget.setHorizontalHeaderItem(7, item)
-        self.stop_button = QtWidgets.QPushButton(self.centralwidget)
-        self.stop_button.setGeometry(QtCore.QRect(140, 380, 75, 23))
-        self.stop_button.setObjectName("stop_button")
+        self.progressBar = ClickableProgressBar(self.centralwidget)
+        self.progressBar.setGeometry(QtCore.QRect(110, 220, 601, 23))
+        self.progressBar.setProperty("value", 0)
+        self.progressBar.setObjectName("progressBar")
+        self.progressBar.note_selected.connect(self.update_note_info)
+        self.current_time_label = QtWidgets.QLabel("0.0s", self.centralwidget)
+        self.current_time_label.setGeometry(QtCore.QRect(720, 220, 50, 23))
+        self.current_time_label.setObjectName("current_time_label")
         self.start_button = QtWidgets.QPushButton(self.centralwidget)
-        self.start_button.setGeometry(QtCore.QRect(60, 380, 75, 23))
+        self.start_button.setGeometry(QtCore.QRect(280, 180, 75, 23))
         self.start_button.setObjectName("start_button")
+        self.pause_button = QtWidgets.QPushButton(self.centralwidget)
+        self.pause_button.setGeometry(QtCore.QRect(340, 260, 75, 23))
+        self.pause_button.setObjectName("pause_button")
+        self.plus5_button = QtWidgets.QPushButton(self.centralwidget)
+        self.plus5_button.setGeometry(QtCore.QRect(580, 260, 75, 23))
+        self.plus5_button.setObjectName("plus5_button")
+        self.minus5_button = QtWidgets.QPushButton(self.centralwidget)
+        self.minus5_button.setGeometry(QtCore.QRect(180, 260, 75, 23))
+        self.minus5_button.setObjectName("minus5_button")
+        self.clear_button = QtWidgets.QPushButton(self.centralwidget)
+        self.clear_button.setGeometry(QtCore.QRect(360, 180, 75, 23))
+        self.clear_button.setObjectName("clear_button")
+        self.prev_button = QtWidgets.QPushButton(self.centralwidget)
+        self.prev_button.setGeometry(QtCore.QRect(260, 260, 75, 23))
+        self.prev_button.setObjectName("prev_button")
+        self.next_button = QtWidgets.QPushButton(self.centralwidget)
+        self.next_button.setGeometry(QtCore.QRect(500, 260, 75, 23))
+        self.next_button.setObjectName("next_button")
+        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label.setGeometry(QtCore.QRect(140, 90, 47, 13))
+        self.label.setObjectName("label")
+        self.label_2 = QtWidgets.QLabel(self.centralwidget)
+        self.label_2.setGeometry(QtCore.QRect(140, 120, 47, 13))
+        self.label_2.setObjectName("label_2")
+        self.label_3 = QtWidgets.QLabel(self.centralwidget)
+        self.label_3.setGeometry(QtCore.QRect(140, 150, 47, 13))
+        self.label_3.setObjectName("label_3")
+        self.label_4 = QtWidgets.QLabel(self.centralwidget)
+        self.label_4.setGeometry(QtCore.QRect(140, 180, 47, 13))
+        self.label_4.setObjectName("label_4")
+        self.note_line = QtWidgets.QLineEdit(self.centralwidget)
+        self.note_line.setGeometry(QtCore.QRect(190, 90, 41, 20))
+        self.note_line.setText("")
+        self.note_line.setObjectName("note_line")
+        self.duration_line = QtWidgets.QLineEdit(self.centralwidget)
+        self.duration_line.setGeometry(QtCore.QRect(190, 120, 41, 20))
+        self.duration_line.setText("")
+        self.duration_line.setObjectName("duration_line")
+        self.speed_line = QtWidgets.QLineEdit(self.centralwidget)
+        self.speed_line.setGeometry(QtCore.QRect(190, 150, 41, 20))
+        self.speed_line.setText("")
+        self.speed_line.setObjectName("speed_line")
+        self.start_line = QtWidgets.QLineEdit(self.centralwidget)
+        self.start_line.setGeometry(QtCore.QRect(190, 180, 41, 20))
+        self.start_line.setText("")
+        self.start_line.setObjectName("start_line")
+        self.label_5 = QtWidgets.QLabel(self.centralwidget)
+        self.label_5.setGeometry(QtCore.QRect(140, 60, 121, 16))
+        self.label_5.setObjectName("label_5")
         self.save_as_button = QtWidgets.QPushButton(self.centralwidget)
-        self.save_as_button.setGeometry(QtCore.QRect(220, 380, 75, 23))
+        self.save_as_button.setGeometry(QtCore.QRect(440, 180, 75, 23))
         self.save_as_button.setObjectName("save_as_button")
         self.load_button = QtWidgets.QPushButton(self.centralwidget)
-        self.load_button.setGeometry(QtCore.QRect(300, 380, 75, 23))
+        self.load_button.setGeometry(QtCore.QRect(520, 180, 75, 23))
         self.load_button.setObjectName("load_button")
-        self.help_button = QtWidgets.QPushButton(self.centralwidget)
-        self.help_button.setGeometry(QtCore.QRect(60, 150, 75, 23))
-        self.help_button.setObjectName("help_button")
+        self.load_button.clicked.connect(self.load_midi)
+        self.advance_button = QtWidgets.QPushButton(self.centralwidget)
+        self.advance_button.setGeometry(QtCore.QRect(600, 180, 75, 23))
+        self.advance_button.setObjectName("advance_button")
+        self.resume_button = QtWidgets.QPushButton(self.centralwidget)
+        self.resume_button.setGeometry(QtCore.QRect(420, 260, 75, 23))
+        self.resume_button.setObjectName("resume_button")
+        self.label_6 = QtWidgets.QLabel(self.centralwidget)
+        self.label_6.setGeometry(QtCore.QRect(360, 30, 61, 16))
+        self.label_6.setObjectName("label_6")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 833, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 788, 21))
         self.menubar.setObjectName("menubar")
-        self.menuFile = QtWidgets.QMenu(self.menubar)
-        self.menuFile.setObjectName("menuFile")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        self.actionLoad = QtWidgets.QAction(MainWindow)
-        self.actionLoad.setObjectName("actionLoad")
-        self.actionSave_As = QtWidgets.QAction(MainWindow)
-        self.actionSave_As.setObjectName("actionSave_As")
-        self.menuFile.addAction(self.actionLoad)
-        self.menuFile.addAction(self.actionSave_As)
-        self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -114,161 +140,115 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label.setText(_translate("MainWindow", "Plucker Input"))
-        self.array_input.setPlaceholderText(_translate("MainWindow", "Ex: [[1,1,1,0],[2,2,2,.5],[...]...]"))
-        self.label_2.setText(_translate("MainWindow", "Array input:"))
-        self.submit_button.setText(_translate("MainWindow", "Submit"))
-        self.submit_button.clicked.connect(self.array_to_table)
-        item = self.tableWidget.verticalHeaderItem(0)
-        item.setText(_translate("MainWindow", "Note"))
-        item = self.tableWidget.verticalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Duration"))
-        item = self.tableWidget.verticalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Speed"))
-        item = self.tableWidget.verticalHeaderItem(3)
-        item.setText(_translate("MainWindow", "Time"))
-        item = self.tableWidget.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "Note1"))
-        item = self.tableWidget.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Note2"))
-        item = self.tableWidget.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Note3"))
-        item = self.tableWidget.horizontalHeaderItem(3)
-        item.setText(_translate("MainWindow", "Note4"))
-        item = self.tableWidget.horizontalHeaderItem(4)
-        item.setText(_translate("MainWindow", "Note5"))
-        item = self.tableWidget.horizontalHeaderItem(5)
-        item.setText(_translate("MainWindow", "Note6"))
-        item = self.tableWidget.horizontalHeaderItem(6)
-        item.setText(_translate("MainWindow", "Note7"))
-        item = self.tableWidget.horizontalHeaderItem(7)
-        item.setText(_translate("MainWindow", "Note8"))
-        self.stop_button.setText(_translate("MainWindow", "Stop"))
         self.start_button.setText(_translate("MainWindow", "Start"))
-        self.start_button.clicked.connect(self.print_table)
+        self.pause_button.setText(_translate("MainWindow", "Pause"))
+        self.plus5_button.setText(_translate("MainWindow", "+5sec"))
+        self.minus5_button.setText(_translate("MainWindow", "-5sec"))
+        self.clear_button.setText(_translate("MainWindow", "Clear"))
+        self.prev_button.setText(_translate("MainWindow", "Prev. Note"))
+        self.next_button.setText(_translate("MainWindow", "Next Note"))
+        self.label.setText(_translate("MainWindow", "Note"))
+        self.label_2.setText(_translate("MainWindow", "Duration"))
+        self.label_3.setText(_translate("MainWindow", "Speed"))
+        self.label_4.setText(_translate("MainWindow", "Start"))
+        self.label_5.setText(_translate("MainWindow", "Current Note Info.:"))
         self.save_as_button.setText(_translate("MainWindow", "Save As"))
-        self.save_as_button.clicked.connect(self.save_table_as_csv)
         self.load_button.setText(_translate("MainWindow", "Load"))
-        self.load_button.clicked.connect(self.load_from_csv)
-        self.help_button.setText(_translate("MainWindow", "Help"))
-        self.help_button.clicked.connect(self.help_clicked)
-        self.menuFile.setTitle(_translate("MainWindow", "File"))
-        self.actionLoad.setText(_translate("MainWindow", "Load"))
-        self.actionSave_As.setText(_translate("MainWindow", "Save As"))
+        self.advance_button.setText(_translate("MainWindow", "Advanced"))
+        self.resume_button.setText(_translate("MainWindow", "Resume"))
+        self.label_6.setText(_translate("MainWindow", "Plucker UI"))
 
-    def add_column(self):
-            col_count = self.tableWidget.columnCount()
-            self.tableWidget.insertColumn(col_count)
-            self.tableWidget.setHorizontalHeaderItem(col_count, QtWidgets.QTableWidgetItem(f"Note{col_count+1}"))
-
-    def remove_column(self):
-        col_count = self.tableWidget.columnCount()
-        if col_count > 0:
-            self.tableWidget.removeColumn(col_count - 1)
-    
-    def save_table_as_csv(self):
-        options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getSaveFileName(None, "Save Table", "", "CSV Files (*.csv);;JSON Files (*.json)", options=options)
-        with open(file_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            
-            # Save headers
-            headers = [self.tableWidget.horizontalHeaderItem(col).text() if self.tableWidget.horizontalHeaderItem(col) else f"Column {col+1}" 
-                    for col in range(self.tableWidget.columnCount())]
-            writer.writerow(headers)
-            
-            # Save table contents
-            for row in range(self.tableWidget.rowCount()):
-                row_data = [self.tableWidget.item(row, col).text() if self.tableWidget.item(row, col) else "" 
-                            for col in range(self.tableWidget.columnCount())]
-                writer.writerow(row_data)
-
-    def load_from_csv(self, file_path):
-        options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(None, "Load Table", "", "CSV Files (*.csv);;JSON Files (*.json)", options=options)
-        with open(file_path, 'r') as file:
-            reader = csv.reader(file)
-            data = list(reader)
-
-            if len(data) == 0:
-                return
-
-            # Set column count based on file
-            self.tableWidget.setColumnCount(len(data[0]))
-            self.tableWidget.setRowCount(len(data) - 1)  # Exclude header row
-
-            # Set headers
-            for col, header in enumerate(data[0]):
-                self.tableWidget.setHorizontalHeaderItem(col, QTableWidgetItem(header))
-
-            # Set table data
-            for row in range(1, len(data)):
-                for col in range(len(data[row])):
-                    self.tableWidget.setItem(row - 1, col, QTableWidgetItem(data[row][col]))
+        self.advance_button.clicked.connect(self.help_clicked)
         
-    def print_table(self):
-        """Prints the table as an array with columns as rows and rows as columns."""
-        output_array = []
-        row_count = self.tableWidget.rowCount()
-        col_count = self.tableWidget.columnCount()
-
-        # Extract data from table and store in a 2D list
-        table_data = [[self.tableWidget.item(row, col).text() if self.tableWidget.item(row, col) else ""
-                    for col in range(col_count)] for row in range(row_count)]
-
-        # Transpose the data (convert columns to rows)
-        transposed_data = list(map(list, zip(*table_data)))
-
-        # Print the transposed array
-        print("Transposed Table:")
-        for row in transposed_data:
-            # print(row)
-            for i in range(len(row)):
-                if i == 1 or i == 3:
-                    row[i] = float(row[i])
-                else:
-                    row[i] = int(row[i])
-            output_array.append(row)
-        self.result_array = output_array
-        pp.pp(output_array)
+    def load_midi(self):
+        # Open file dialog to select a MIDI file
+        file_dialog = QtWidgets.QFileDialog()
+        midi_file, _ = file_dialog.getOpenFileName(None, "Open MIDI File", "", "MIDI Files (*.mid *.midi)")
         
+        if midi_file:
+            self.load_midi_data(midi_file)
 
-    def array_to_table(self):
-        input_text = self.array_input.text().strip()
-
-        if not input_text:
-            return  # Do nothing if input is empty
-
+    def load_midi_data(self, midi_file):
         try:
-            # Safely convert the string to a list
-            array_data = ast.literal_eval(input_text)
+            midi_data = pretty_midi.PrettyMIDI(midi_file)
+            
+            # Clear any existing notes in the array
+            self.input_array.clear()
 
-            if not isinstance(array_data, list) or not all(isinstance(row, list) for row in array_data):
-                raise ValueError("Invalid format. Must be a 2D list.")
+            # A list to store the last note's end time for calculating speed
+            last_end_time = 0
+            total_duration = 0  # Variable to store the total duration of the MIDI file
 
-            # Transpose the data (convert rows to columns)
-            transposed_data = list(map(list, zip(*array_data)))
+            # Extract note information from each instrument
+            for instrument in midi_data.instruments:
+                for note in instrument.notes:
+                    # Calculate the note's duration
+                    duration = note.end - note.start
+                    
+                    # Calculate the speed (difference in start time between consecutive notes)
+                    speed = note.start - last_end_time if last_end_time else 0
+                    
+                    # Store the note information as a dictionary
+                    note_info = {
+                        'note_number': note.pitch,
+                        'duration': duration,
+                        'speed': speed,
+                        'start': note.start,
+                    }
+                    self.input_array.append(note_info)
+                    
+                    # Update last end time
+                    last_end_time = note.end
 
-            # Get new dimensions after transposing
-            row_count = len(transposed_data)
-            col_count = max(len(row) for row in transposed_data)  # Get the longest row
+                    # Update the total duration based on the last note's end time
+                    total_duration = max(total_duration, note.end)
 
-            # Resize table
-            self.tableWidget.setRowCount(row_count)
-            self.tableWidget.setColumnCount(col_count)
+            # Set the progress bar's maximum value to the total duration of the MIDI file
+            self.progressBar.setMaximum(int(total_duration))
 
-            # Fill table with transposed data
-            for row_idx, row in enumerate(transposed_data):
-                for col_idx, value in enumerate(row):
-                    self.tableWidget.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+            # Print out the array for debugging
+            print("Loaded MIDI with", len(self.input_array), "notes.")
+            for note_info in self.input_array:
+                print(note_info)
+        
+        except Exception as e:
+            print(f"Error loading MIDI file: {e}")
 
-        except (ValueError, SyntaxError):
-            print("Invalid input format! Enter a valid 2D array.")
+    def update_current_time_label(self):
+        # Get the current value of the progress bar
+        current_value = self.progressBar.value()
+        
+        # Set the current time label as a string
+        self.current_time_label.setText(f"{current_value:.2f}s")
     
+    def update_note_info(self, note_info):
+        # Populate the line edits with the note's information
+        self.note_line.setText(str(note_info['note_number']))
+        self.duration_line.setText(str(note_info['duration']))
+        self.speed_line.setText(str(note_info['speed']))
+        self.start_line.setText(str(note_info['start']))
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            click_position = event.x()
+            total_width = self.progressBar.width()
+            click_time = (click_position / total_width) * self.progressBar.maximum()
+
+            # Find the note that corresponds to the clicked time
+            for note_info in self.input_array:
+                if note_info['start'] <= click_time and click_time <= note_info['start'] + note_info['duration']:
+                    # Populate the line edits with the selected note's information
+                    self.note_line.setText(str(note_info['note_number']))
+                    self.duration_line.setText(str(note_info['duration']))
+                    self.speed_line.setText(str(note_info['speed']))
+                    self.start_line.setText(str(note_info['start']))
+                    break
+
     def help_clicked(self):
         if self.advanced_window is None or not self.advanced_window.isVisible():
             self.advanced_window = AdvancedWindow()
             self.advanced_window.show()
+
 class AdvancedWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -305,7 +285,8 @@ class AdvancedWindow(QWidget):
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(8)
         self.tableWidget.setRowCount(4)
-
+        self.tableWidget.setVerticalHeaderLabels(["Note", "Duration", "Speed", "Start"])
+        self.tableWidget.setHorizontalHeaderLabels(["Note 1", "Note 2", "Note 3", "Note 4", "Note 5", "Note 6", "Note 7", "Note 8"])
         self.add_column_button = QtWidgets.QPushButton(self.centralwidget)
         self.add_column_button.setGeometry(QtCore.QRect(400, 380, 100, 23))
         self.add_column_button.setObjectName("add_column_button")
@@ -330,12 +311,12 @@ class AdvancedWindow(QWidget):
         self.save_as_button = QtWidgets.QPushButton(self.centralwidget)
         self.save_as_button.setGeometry(QtCore.QRect(220, 380, 75, 23))
         self.save_as_button.setObjectName("save_as_button")
-        self.save_as_button.clicked.connect(self.save_table_as_csv)
+        self.save_as_button.clicked.connect(self.save_table_as_midi)
 
         self.load_button = QtWidgets.QPushButton(self.centralwidget)
         self.load_button.setGeometry(QtCore.QRect(300, 380, 75, 23))
         self.load_button.setObjectName("load_button")
-        self.load_button.clicked.connect(self.load_from_csv)
+        self.load_button.clicked.connect(self.load_from_midi)
 
         self.help_button = QtWidgets.QPushButton(self.centralwidget)
         self.help_button.setGeometry(QtCore.QRect(60, 150, 75, 23))
@@ -366,42 +347,67 @@ class AdvancedWindow(QWidget):
         if col_count > 0:
             self.tableWidget.removeColumn(col_count - 1)
 
-    def save_table_as_csv(self):
+    def save_table_as_midi(self):
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save Table", "", "CSV Files (*.csv);;JSON Files (*.json)", options=options)
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save MIDI", "", "MIDI Files (*.mid)", options=options)
         if file_path:
-            with open(file_path, 'w', newline='') as file:
-                writer = csv.writer(file)
+            midi = pretty_midi.PrettyMIDI()
+            instrument = pretty_midi.Instrument(program=0)  # Acoustic Grand Piano
 
-                headers = [self.tableWidget.horizontalHeaderItem(col).text() if self.tableWidget.horizontalHeaderItem(col) else f"Column {col+1}"
-                           for col in range(self.tableWidget.columnCount())]
-                writer.writerow(headers)
+            # Iterate through the columns (notes) of the table
+            for col in range(self.tableWidget.columnCount()):
+                try:
+                    # Extract attributes from the rows for each column (note)
+                    note_number = int(self.tableWidget.item(0, col).text()) if self.tableWidget.item(0, col) else 0  # Default to 0 if empty
+                    duration = float(self.tableWidget.item(1, col).text()) if self.tableWidget.item(1, col) else 1.0  # Default to 1.0 if empty
+                    velocity = int(self.tableWidget.item(2, col).text()) if self.tableWidget.item(2, col) else 64  # Default to 64 if empty
+                    start_time = float(self.tableWidget.item(3, col).text()) if self.tableWidget.item(3, col) else 0.0  # Default to 0.0 if empty
 
-                for row in range(self.tableWidget.rowCount()):
-                    row_data = [self.tableWidget.item(row, col).text() if self.tableWidget.item(row, col) else ""
-                                for col in range(self.tableWidget.columnCount())]
-                    writer.writerow(row_data)
+                    # Create a new note with the extracted data
+                    note = pretty_midi.Note(velocity=velocity, pitch=note_number, start=start_time, end=start_time + duration)
+                    instrument.notes.append(note)
 
-    def load_from_csv(self):
+                except (ValueError, AttributeError) as e:
+                    print(f"Skipping invalid data in column {col}: {e}")
+                    continue  # Skip columns with invalid data
+
+            # Append the instrument (with its notes) to the MIDI object
+            midi.instruments.append(instrument)
+
+            # Write the MIDI data to the specified file
+            midi.write(file_path)
+            print(f"MIDI file saved at: {file_path}")
+
+
+    def load_from_midi(self):
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(self, "Load Table", "", "CSV Files (*.csv);;JSON Files (*.json)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load MIDI", "", "MIDI Files (*.mid)", options=options)
         if file_path:
-            with open(file_path, 'r') as file:
-                reader = csv.reader(file)
-                data = list(reader)
+            midi = pretty_midi.PrettyMIDI(file_path)
 
-                if len(data) == 0:
-                    return
+            notes = []
+            for instrument in midi.instruments:
+                for note in instrument.notes:
+                    notes.append([note.pitch, note.end - note.start, note.velocity, note.start])
 
-                self.tableWidget.setColumnCount(len(data[0]))
-                self.tableWidget.setRowCount(len(data) - 1)
+            if not notes:
+                return
 
-                for col, header in enumerate(data[0]):
-                    self.tableWidget.setHorizontalHeaderItem(col, QTableWidgetItem(header))
+            # Transpose the data: This swaps rows and columns
+            transposed_data = list(zip(*notes))  # Transpose rows and columns
 
-                for row in range(1, len(data)):
-                    for col in range(len(data[row])):
-                        self.tableWidget.setItem(row - 1, col, QTableWidgetItem(data[row][col]))
+            # Set the number of rows and columns based on transposed data
+            self.tableWidget.setRowCount(len(transposed_data))  # Set number of rows to the number of columns from original data
+            self.tableWidget.setColumnCount(len(transposed_data[0]))  # Set number of columns to the number of rows from original data
+
+            # Set proper headers for flipped table layout
+            self.tableWidget.setHorizontalHeaderLabels([f"Note {i+1}" for i in range(len(transposed_data[0]))])
+            self.tableWidget.setVerticalHeaderLabels(["Note", "Duration", "Speed", "Start"])
+
+            # Fill the table with transposed data
+            for row in range(len(transposed_data)):
+                for col in range(len(transposed_data[row])):
+                    self.tableWidget.setItem(row, col, QTableWidgetItem(str(transposed_data[row][col])))
 
     def array_to_table(self):
         try:
