@@ -16,41 +16,44 @@ import pprint as pp
 import csv
 import ast
 class ClickableProgressBar(QtWidgets.QProgressBar):
-    def __init__(self, parent=None, input_array=None):
+    def __init__(self, parent=None, ui_main_window=None, input_array=None, current_time=0):
         super().__init__(parent)
+        self.ui_main_window = ui_main_window
         self.input_array = input_array if input_array else []
+        self.current_time = current_time
     
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             click_position = event.x()  # Get the clicked position on the progress bar
             total_width = self.width()  # Get the total width of the progress bar
-            new_value = int((click_position / total_width) * self.maximum())  # Calculate the new value based on the click
+            new_value = float((click_position / total_width) * self.maximum())  # Calculate the new value based on the click
             self.setValue(int(new_value))
 
             # After setting the progress bar value, call the function to update note info
-            self.update_note_info(new_value)
+            self.update_note_info()
 
-    def update_note_info(self, time_position):
-        # Loop through all the notes in input_array to find the one that matches the clicked time
+    def update_note_info(self):
         for note_info in self.input_array:
-            # Check if the clicked time is within the start and end time of the note
-            if note_info['start'] <= time_position <= (note_info['start'] + note_info['duration']):
-                # Populate the line edits with the note's information
-                self.parent().note_line.setText(str(note_info['note_number']))
-                self.parent().duration_line.setText(str(note_info['duration']))
-                self.parent().speed_line.setText(str(note_info['speed']))
-                self.parent().start_line.setText(str(note_info['start']))
-                break  # Stop the loop once the note is found
+            if note_info['start'] <= self.current_time <= (note_info['start'] + note_info['duration']):
+                # Use stored reference to update the line edits
+                self.ui_main_window.note_line.setText(str(note_info['note_number']))
+                self.ui_main_window.duration_line.setText(str(note_info['duration']))
+                self.ui_main_window.speed_line.setText(str(note_info['speed']))
+                self.ui_main_window.start_line.setText(str(note_info['start']))
+                break
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(788, 348)
         self.input_array = []
+        self.total_duration = 0
         self.advanced_window = None
+        self.current_value = 0
+        self.current_note = 0
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.progressBar = ClickableProgressBar(self.centralwidget)
+        self.progressBar = ClickableProgressBar(self.centralwidget, ui_main_window=self, input_array=self.input_array, current_time=self.current_value)
         self.progressBar.setGeometry(QtCore.QRect(110, 220, 601, 23))
         self.progressBar.setProperty("value", 0)
         self.progressBar.setObjectName("progressBar")
@@ -112,6 +115,10 @@ class Ui_MainWindow(object):
         self.save_as_button = QtWidgets.QPushButton(self.centralwidget)
         self.save_as_button.setGeometry(QtCore.QRect(440, 180, 75, 23))
         self.save_as_button.setObjectName("save_as_button")
+        self.save_button = QtWidgets.QPushButton(self.centralwidget)
+        self.save_button.setGeometry(QtCore.QRect(440, 150, 75, 23))
+        self.save_button.setObjectName("save_button")
+        self.save_button.clicked.connect(self.save_edited)
         self.load_button = QtWidgets.QPushButton(self.centralwidget)
         self.load_button.setGeometry(QtCore.QRect(520, 180, 75, 23))
         self.load_button.setObjectName("load_button")
@@ -154,13 +161,15 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Start"))
         self.label_5.setText(_translate("MainWindow", "Current Note Info.:"))
         self.save_as_button.setText(_translate("MainWindow", "Save As"))
+        self.save_button.setText(_translate("MainWindow", "Save"))
         self.load_button.setText(_translate("MainWindow", "Load"))
         self.advance_button.setText(_translate("MainWindow", "Advanced"))
         self.resume_button.setText(_translate("MainWindow", "Resume"))
         self.label_6.setText(_translate("MainWindow", "Plucker UI"))
 
         self.advance_button.clicked.connect(self.help_clicked)
-        
+    def save_midi(self):
+        pass    
     def load_midi(self):
         # Open file dialog to select a MIDI file
         file_dialog = QtWidgets.QFileDialog()
@@ -193,7 +202,7 @@ class Ui_MainWindow(object):
                     note_info = {
                         'note_number': note.pitch,
                         'duration': duration,
-                        'speed': speed,
+                        'speed': int(speed),
                         'start': note.start,
                     }
                     self.input_array.append(note_info)
@@ -202,10 +211,10 @@ class Ui_MainWindow(object):
                     last_end_time = note.end
 
                     # Update the total duration based on the last note's end time
-                    total_duration = max(total_duration, note.end)
+                    self.total_duration = note.end
 
             # Set the progress bar's maximum value to the total duration of the MIDI file
-            self.progressBar.setMaximum(int(total_duration))
+            # self.progressBar.setMaximum(int(total_duration))
 
             # Print out the array for debugging
             print("Loaded MIDI with", len(self.input_array), "notes.")
@@ -217,26 +226,56 @@ class Ui_MainWindow(object):
 
     def update_current_time_label(self):
         # Get the current value of the progress bar
-        current_value = self.progressBar.value()
-        
+        self.current_value = self.progressBar.value()
+        self.current_value = self.total_duration*(self.current_value/100)
+        self.show_info()
         # Set the current time label as a string
-        self.current_time_label.setText(f"{current_value:.2f}s")
+        self.current_time_label.setText(f"{self.current_value:.2f}s")
 
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            click_position = event.x()
-            total_width = self.progressBar.width()
-            click_time = (click_position / total_width) * self.progressBar.maximum()
-
-            # Find the note that corresponds to the clicked time
-            for note_info in self.input_array:
-                if note_info['start'] <= click_time and click_time <= note_info['start'] + note_info['duration']:
-                    # Populate the line edits with the selected note's information
-                    self.note_line.setText(str(note_info['note_number']))
-                    self.duration_line.setText(str(note_info['duration']))
-                    self.speed_line.setText(str(note_info['speed']))
-                    self.start_line.setText(str(note_info['start']))
-                    break
+    def show_info(self):
+        for i in range(len(self.input_array)):
+            if self.input_array[i]['start'] <= self.current_value < (self.input_array[i]['start'] + self.input_array[i]['duration']):
+                self.note_line.setText(str(self.input_array[i]['note_number']))
+                self.duration_line.setText(str(self.input_array[i]['duration']))
+                self.speed_line.setText(str(self.input_array[i]['speed']))
+                self.start_line.setText(str(self.input_array[i]['start']))
+                self.current_note = i
+                print(i)
+                break  # Stop after finding the first matching note
+    def save_edited(self):
+        self.input_array[self.current_note]['note_number'] = int(self.note_line.text())
+        self.input_array[self.current_note]['duration'] = float(self.duration_line.text())
+        self.input_array[self.current_note]['speed'] = int(self.speed_line.text())
+        self.input_array[self.current_note]['start'] = float(self.start_line.text())
+        pp.pp(self.input_array)
+    def start_sequence(self):
+        # single_tick = self.progressBar.maximum() / self.total_duration
+        # curent_tick = self.progressBar.value()
+        # while()
+        pass
+    def pause_sequence(self):
+        pass
+    def update_note(self):
+        pass
+    # def mousePressEvent(self, event):
+    #     if event.button() == QtCore.Qt.LeftButton:
+    #         click_position = event.x()
+    #         total_width = self.progressBar.width()
+            
+    #         # Convert click position to a time value
+    #         clicked_time = (click_position / total_width) * self.total_duration
+            
+    #         # Update progress bar
+    #         self.progressBar.setValue(int((clicked_time / self.total_duration) * 100))
+            
+    #         # Find the corresponding note
+    #         for note_info in self.input_array:
+    #             if note_info['start'] <= clicked_time <= (note_info['start'] + note_info['duration']):
+    #                 self.note_line.setText(str(note_info['note_number']))
+    #                 self.duration_line.setText(str(note_info['duration']))
+    #                 self.speed_line.setText(str(note_info['speed']))
+    #                 self.start_line.setText(str(note_info['start']))
+    #                 break  # Stop after finding the first matching note
 
     def help_clicked(self):
         if self.advanced_window is None or not self.advanced_window.isVisible():
