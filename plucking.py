@@ -115,6 +115,7 @@ class Ui_MainWindow(object):
         self.save_as_button = QtWidgets.QPushButton(self.centralwidget)
         self.save_as_button.setGeometry(QtCore.QRect(440, 180, 75, 23))
         self.save_as_button.setObjectName("save_as_button")
+        self.save_as_button.clicked.connect(self.save_midi)
         self.save_button = QtWidgets.QPushButton(self.centralwidget)
         self.save_button.setGeometry(QtCore.QRect(440, 150, 75, 23))
         self.save_button.setObjectName("save_button")
@@ -168,8 +169,23 @@ class Ui_MainWindow(object):
         self.label_6.setText(_translate("MainWindow", "Plucker UI"))
 
         self.advance_button.clicked.connect(self.help_clicked)
+
     def save_midi(self):
-        pass    
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getSaveFileName(None, "Save MIDI", "", "MIDI Files (*.mid)", options=options)
+        if file_path:
+            midi = pretty_midi.PrettyMIDI()
+            instrument = pretty_midi.Instrument(program=0)  # Acoustic Grand Piano
+
+            # Iterate through the columns (notes) of the table
+            for curr_note in self.input_array:
+                note = pretty_midi.Note(velocity=50, pitch= curr_note["note_number"], start= curr_note["start"], end= curr_note["start"] + curr_note["duration"])
+                instrument.notes.append(note)
+            midi.instruments.append(instrument)
+
+            # Write the MIDI data to the specified file
+            midi.write(file_path)
+            print(f"MIDI file saved at: {file_path}")    
     def load_midi(self):
         # Open file dialog to select a MIDI file
         file_dialog = QtWidgets.QFileDialog()
