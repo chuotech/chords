@@ -464,8 +464,8 @@ class AdvancedWindow(QWidget):
             if isinstance(array_data, list) and all(isinstance(row, list) for row in array_data):
                 self.tableWidget.setRowCount(len(array_data))
                 self.tableWidget.setColumnCount(len(array_data[0]))
-                for row_idx, row in enumerate(array_data):
-                    for col_idx, value in enumerate(row):
+                for col_idx, row in enumerate(array_data):
+                    for row_idx, value in enumerate(row):
                         self.tableWidget.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
         except Exception as e:
             print(f"Invalid input: {e}")
