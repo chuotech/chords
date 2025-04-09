@@ -11,12 +11,16 @@ def handle_number(address, *args):
 
 def handle_start(address, *args):
     print(f"Received {address}: {args}")
+
+def handle_pluck(address, *args):
+    print(f"Received {address}: {args}")
 # Create dispatcher and map OSC addresses
 dispatcher = Dispatcher()
 dispatcher.map("/hello", handle_hello)
 dispatcher.map("/number", handle_number)
 dispatcher.map("/number", handle_number)
 dispatcher.map("/Start", handle_start)
+dispatcher.map("/Pluck", handle_pluck)
 
 # Set up async OSC server
 async def main():

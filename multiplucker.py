@@ -10,19 +10,19 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pythonosc.udp_client import SimpleUDPClient
-
+import pprint
 ip = "127.0.0.1"
-port = 5005
+port = 12000
 
 client = SimpleUDPClient(ip, port)
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(709, 488)
-        self.g_melody = []
-        self.b_melody = []
-        self.e_melody = []
-        self.duration_indefinite = -999
+        self.e_melody = [[41, 1.0, 5, 0.0], [42, 1.0, 5, 1.0], [44, 1.0, 5, 2.0], [46, 1.0, 5, 3.0]]
+        self.d_melody = [[51, 1.0, 5, 0.0], [52, 1.0, 5, 1.0], [54, 1.0, 5, 2.0], [56, 1.0, 5, 3.0]]
+        self.b_melody = [[59, 1.0, 5, 0.0], [60, 1.0, 5, 1.0], [62, 1.0, 5, 2.0], [64, 1.0, 5, 3.0]]
+        self.duration_indefinite = 10
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
@@ -40,30 +40,30 @@ class Ui_MainWindow(object):
         self.label_5 = QtWidgets.QLabel(self.centralwidget)
         self.label_5.setGeometry(QtCore.QRect(60, 120, 55, 16))
         self.label_5.setObjectName("label_5")
-        self.speed_g_edit = QtWidgets.QLineEdit(self.centralwidget)
-        self.speed_g_edit.setGeometry(QtCore.QRect(240, 160, 101, 22))
-        self.speed_g_edit.setObjectName("speed_g_edit")
-        self.speed_b_edit = QtWidgets.QLineEdit(self.centralwidget)
-        self.speed_b_edit.setGeometry(QtCore.QRect(240, 200, 101, 22))
-        self.speed_b_edit.setObjectName("speed_b_edit")
         self.speed_e_edit = QtWidgets.QLineEdit(self.centralwidget)
-        self.speed_e_edit.setGeometry(QtCore.QRect(240, 240, 101, 22))
+        self.speed_e_edit.setGeometry(QtCore.QRect(240, 160, 101, 22))
         self.speed_e_edit.setObjectName("speed_e_edit")
+        self.speed_d_edit = QtWidgets.QLineEdit(self.centralwidget)
+        self.speed_d_edit.setGeometry(QtCore.QRect(240, 200, 101, 22))
+        self.speed_d_edit.setObjectName("speed_d_edit")
+        self.speed_b_edit = QtWidgets.QLineEdit(self.centralwidget)
+        self.speed_b_edit.setGeometry(QtCore.QRect(240, 240, 101, 22))
+        self.speed_b_edit.setObjectName("speed_b_edit")
         self.label_6 = QtWidgets.QLabel(self.centralwidget)
         self.label_6.setGeometry(QtCore.QRect(270, 120, 55, 16))
         self.label_6.setObjectName("label_6")
         self.label_7 = QtWidgets.QLabel(self.centralwidget)
         self.label_7.setGeometry(QtCore.QRect(150, 120, 71, 16))
         self.label_7.setObjectName("label_7")
-        self.note_g_edit = QtWidgets.QLineEdit(self.centralwidget)
-        self.note_g_edit.setGeometry(QtCore.QRect(130, 160, 101, 22))
-        self.note_g_edit.setObjectName("note_g_edit")
-        self.note_b_edit = QtWidgets.QLineEdit(self.centralwidget)
-        self.note_b_edit.setGeometry(QtCore.QRect(130, 200, 101, 22))
-        self.note_b_edit.setObjectName("note_b_edit")
         self.note_e_edit = QtWidgets.QLineEdit(self.centralwidget)
-        self.note_e_edit.setGeometry(QtCore.QRect(130, 240, 101, 22))
+        self.note_e_edit.setGeometry(QtCore.QRect(130, 160, 101, 22))
         self.note_e_edit.setObjectName("note_e_edit")
+        self.note_d_edit = QtWidgets.QLineEdit(self.centralwidget)
+        self.note_d_edit.setGeometry(QtCore.QRect(130, 200, 101, 22))
+        self.note_d_edit.setObjectName("note_d_edit")
+        self.note_b_edit = QtWidgets.QLineEdit(self.centralwidget)
+        self.note_b_edit.setGeometry(QtCore.QRect(130, 240, 101, 22))
+        self.note_b_edit.setObjectName("note_b_edit")
         self.start_button = QtWidgets.QPushButton(self.centralwidget)
         self.start_button.setGeometry(QtCore.QRect(350, 280, 93, 28))
         self.start_button.setObjectName("start_button")
@@ -77,42 +77,46 @@ class Ui_MainWindow(object):
         self.melody_all_button = QtWidgets.QPushButton(self.centralwidget)
         self.melody_all_button.setGeometry(QtCore.QRect(550, 280, 93, 28))
         self.melody_all_button.setObjectName("melody_all_button")
-        self.pause_button_g = QtWidgets.QPushButton(self.centralwidget)
-        self.pause_button_g.setGeometry(QtCore.QRect(450, 160, 93, 28))
-        self.pause_button_g.setObjectName("pause_button_g")
-        self.pause_button_g.clicked.connect(self.pause_sequence)
-        self.start_button_g = QtWidgets.QPushButton(self.centralwidget)
-        self.start_button_g.setGeometry(QtCore.QRect(350, 160, 93, 28))
-        self.start_button_g.setObjectName("start_button_g")
-        self.start_button_g.clicked.connect(lambda: self.start_string("g"))
-        self.pause_button_B = QtWidgets.QPushButton(self.centralwidget)
-        self.pause_button_B.setGeometry(QtCore.QRect(450, 200, 93, 28))
-        self.pause_button_B.setObjectName("pause_button_B")
-        self.pause_button_B.clicked.connect(self.pause_sequence)
-        self.start_button_b = QtWidgets.QPushButton(self.centralwidget)
-        self.start_button_b.setGeometry(QtCore.QRect(350, 200, 93, 28))
-        self.start_button_b.setObjectName("start_button_b")
-        self.start_button_b.clicked.connect(lambda: self.start_string("b"))
-        self.pause_button_4 = QtWidgets.QPushButton(self.centralwidget)
-        self.pause_button_4.setGeometry(QtCore.QRect(450, 240, 93, 28))
-        self.pause_button_4.setObjectName("pause_button_4")
-        self.pause_button_4.clicked.connect(self.pause_sequence)
+        self.melody_all_button.clicked.connect(lambda: self.get_array("all"))
+        self.pause_button_e = QtWidgets.QPushButton(self.centralwidget)
+        self.pause_button_e.setGeometry(QtCore.QRect(450, 160, 93, 28))
+        self.pause_button_e.setObjectName("pause_button_e")
+        self.pause_button_e.clicked.connect(self.pause_sequence)
         self.start_button_e = QtWidgets.QPushButton(self.centralwidget)
-        self.start_button_e.setGeometry(QtCore.QRect(350, 240, 93, 28))
+        self.start_button_e.setGeometry(QtCore.QRect(350, 160, 93, 28))
         self.start_button_e.setObjectName("start_button_e")
         self.start_button_e.clicked.connect(lambda: self.start_string("e"))
-        self.melody_e = QtWidgets.QPushButton(self.centralwidget)
-        self.melody_e.setGeometry(QtCore.QRect(550, 240, 93, 28))
-        self.melody_e.setObjectName("melody_e")
+        self.pause_button_d = QtWidgets.QPushButton(self.centralwidget)
+        self.pause_button_d.setGeometry(QtCore.QRect(450, 200, 93, 28))
+        self.pause_button_d.setObjectName("pause_button_d")
+        self.pause_button_d.clicked.connect(self.pause_sequence)
+        self.start_button_d = QtWidgets.QPushButton(self.centralwidget)
+        self.start_button_d.setGeometry(QtCore.QRect(350, 200, 93, 28))
+        self.start_button_d.setObjectName("start_button_d")
+        self.start_button_d.clicked.connect(lambda: self.start_string("b"))
+        self.pause_button_b = QtWidgets.QPushButton(self.centralwidget)
+        self.pause_button_b.setGeometry(QtCore.QRect(450, 240, 93, 28))
+        self.pause_button_b.setObjectName("pause_button_b")
+        self.pause_button_b.clicked.connect(self.pause_sequence)
+        self.start_button_b = QtWidgets.QPushButton(self.centralwidget)
+        self.start_button_b.setGeometry(QtCore.QRect(350, 240, 93, 28))
+        self.start_button_b.setObjectName("start_button_b")
+        self.start_button_b.clicked.connect(lambda: self.start_string("b"))
+        self.melody_b = QtWidgets.QPushButton(self.centralwidget)
+        self.melody_b.setGeometry(QtCore.QRect(550, 240, 93, 28))
+        self.melody_b.setObjectName("melody_b")
+        self.melody_b.clicked.connect(lambda: self.get_array("b"))
         self.label_9 = QtWidgets.QLabel(self.centralwidget)
         self.label_9.setGeometry(QtCore.QRect(560, 120, 81, 16))
         self.label_9.setObjectName("label_9")
-        self.melody_g = QtWidgets.QPushButton(self.centralwidget)
-        self.melody_g.setGeometry(QtCore.QRect(550, 160, 93, 28))
-        self.melody_g.setObjectName("melody_g")
-        self.melody_b = QtWidgets.QPushButton(self.centralwidget)
-        self.melody_b.setGeometry(QtCore.QRect(550, 200, 93, 28))
-        self.melody_b.setObjectName("melody_b")
+        self.melody_e = QtWidgets.QPushButton(self.centralwidget)
+        self.melody_e.setGeometry(QtCore.QRect(550, 160, 93, 28))
+        self.melody_e.setObjectName("melody_e")
+        self.melody_e.clicked.connect(lambda: self.get_array("e"))
+        self.melody_d = QtWidgets.QPushButton(self.centralwidget)
+        self.melody_d.setGeometry(QtCore.QRect(550, 200, 93, 28))
+        self.melody_d.setObjectName("melody_d")
+        self.melody_d.clicked.connect(lambda: self.get_array("d"))
         self.label_8 = QtWidgets.QLabel(self.centralwidget)
         self.label_8.setGeometry(QtCore.QRect(380, 120, 55, 16))
         self.label_8.setObjectName("label_8")
@@ -144,9 +148,9 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label.setText(_translate("MainWindow", "Multi-plucker UI"))
-        self.label_2.setText(_translate("MainWindow", "G:"))
-        self.label_3.setText(_translate("MainWindow", "B:"))
-        self.label_4.setText(_translate("MainWindow", "E:"))
+        self.label_2.setText(_translate("MainWindow", "E:"))
+        self.label_3.setText(_translate("MainWindow", "D:"))
+        self.label_4.setText(_translate("MainWindow", "B:"))
         self.label_5.setText(_translate("MainWindow", "Strings:"))
         self.label_6.setText(_translate("MainWindow", "Speed"))
         self.label_7.setText(_translate("MainWindow", "Note (MIDI)"))
@@ -154,16 +158,16 @@ class Ui_MainWindow(object):
         self.pause_button.setText(_translate("MainWindow", "Pause All"))
         self.calibrate_button.setText(_translate("MainWindow", "Calibrate"))
         self.melody_all_button.setText(_translate("MainWindow", "Melody All"))
-        self.pause_button_g.setText(_translate("MainWindow", "Pause (G)"))
-        self.start_button_g.setText(_translate("MainWindow", "Start (G)"))
-        self.pause_button_B.setText(_translate("MainWindow", "Pause (B)"))
-        self.start_button_b.setText(_translate("MainWindow", "Start (B)"))
-        self.pause_button_4.setText(_translate("MainWindow", "Pause (E)"))
+        self.pause_button_e.setText(_translate("MainWindow", "Pause (E)"))
         self.start_button_e.setText(_translate("MainWindow", "Start (E)"))
-        self.melody_e.setText(_translate("MainWindow", "Melody (E)"))
-        self.label_9.setText(_translate("MainWindow", "Melody Start"))
-        self.melody_g.setText(_translate("MainWindow", "Melody (G)"))
+        self.pause_button_d.setText(_translate("MainWindow", "Pause (D)"))
+        self.start_button_d.setText(_translate("MainWindow", "Start (D)"))
+        self.pause_button_b.setText(_translate("MainWindow", "Pause (B)"))
+        self.start_button_b.setText(_translate("MainWindow", "Start (B)"))
         self.melody_b.setText(_translate("MainWindow", "Melody (B)"))
+        self.label_9.setText(_translate("MainWindow", "Melody Start"))
+        self.melody_e.setText(_translate("MainWindow", "Melody (E)"))
+        self.melody_d.setText(_translate("MainWindow", "Melody (D)"))
         self.label_8.setText(_translate("MainWindow", "Start"))
         self.label_10.setText(_translate("MainWindow", "Pause"))
         self.message_text.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
@@ -178,34 +182,66 @@ class Ui_MainWindow(object):
         self.message_text.append(message)
     
     def start_string(self, string):
-        if string == "g":
-            g_string = [[int(self.note_g_edit.text()), int(self.duration_indefinite), int(self.speed_g_edit.text()), 0.0]]
-            self.update_message("Starting G String...")
-            self.update_message(str(g_string))
-            self.send_to_udp(g_string)
-        if string == "b":
-            b_string = [[int(self.note_b_edit.text()), int(self.duration_indefinite), int(self.speed_b_edit.text()), 0.0 ]]
-            self.update_message("Starting B String...")
-            self.update_message(str(b_string))
-            self.send_to_udp(b_string)
         if string == "e":
+        #40-49 e
             e_string = [[int(self.note_e_edit.text()), int(self.duration_indefinite), int(self.speed_e_edit.text()), 0.0]]
             self.update_message("Starting E String...")
             self.update_message(str(e_string))
             self.send_to_udp(e_string)
+        if string == "d":
+        #50-58 d
+            d_string = [[int(self.note_d_edit.text()), int(self.duration_indefinite), int(self.speed_d_edit.text()), 0.0]]
+            self.update_message("Starting B String...")
+            self.update_message(str(d_string))
+            self.send_to_udp(d_string)
+        if string == "b":
+        #59-68 b
+            b_string = [[int(self.note_b_edit.text()), int(self.duration_indefinite), int(self.speed_b_edit.text()), 0.0]]
+            self.update_message("Starting E String...")
+            self.update_message(str(b_string))
+            self.send_to_udp(b_string)
         if string == "all":
             self.update_message("Starting All Strings...")
+            all_strings = []
+            all_strings.append([int(self.note_e_edit.text()), int(self.duration_indefinite), int(self.speed_e_edit.text()), 0.0])
+            all_strings.append([int(self.note_d_edit.text()), int(self.duration_indefinite), int(self.speed_d_edit.text()), 0.0])
+            all_strings.append([int(self.note_b_edit.text()), int(self.duration_indefinite), int(self.speed_b_edit.text()), 0.0])
+            for note in all_strings:
+                self.update_message(str(note))
+            self.send_to_udp(all_strings)
+
+
 
     def pause_sequence(self, string):
         pass
     
-    def get_array(self, arr):
-        pass
+    def get_array(self, string):
+        if string == "e":
+            self.update_message("Starting E melody...")
+            self.update_message(str(pprint.pformat(self.e_melody)))
+            self.send_to_udp(self.e_melody)
+        if string == "d":
+            self.update_message("Starting D melody...")
+            self.update_message(str(pprint.pformat(self.d_melody)))
+            self.send_to_udp(self.d_melody)
+        if string == "b":
+            self.update_message("Starting B melody...")
+            self.update_message(str(pprint.pformat(self.b_melody)))
+            self.send_to_udp(self.b_melody)
+        if string == "all":
+            self.update_message("Starting All Strings Melody...")
+            all_string_melody = []
+            for i in range(len(self.e_melody)):
+                all_string_melody.append(self.e_melody[i])
+                all_string_melody.append(self.d_melody[i])
+                all_string_melody.append(self.b_melody[i])
+            self.update_message(str(pprint.pformat(all_string_melody)))
+            self.send_to_udp(all_string_melody)
+                
     
     def send_to_udp(self, arr):
-        print(f"Sending message to /Start: {arr}")
-        client.send_message("/Start", arr)
-        pass
+        print(f"Sending message to /Pluck: {arr}")
+        client.send_message("/Pluck", arr)
 
 
 if __name__ == "__main__":
