@@ -191,13 +191,13 @@ class Ui_MainWindow(object):
         if string == "d":
         #50-58 d
             d_string = [[int(self.note_d_edit.text()), int(self.duration_indefinite), int(self.speed_d_edit.text()), 0.0]]
-            self.update_message("Starting B String...")
+            self.update_message("Starting D String...")
             self.update_message(str(d_string))
             self.send_to_udp(d_string)
         if string == "b":
         #59-68 b
             b_string = [[int(self.note_b_edit.text()), int(self.duration_indefinite), int(self.speed_b_edit.text()), 0.0]]
-            self.update_message("Starting E String...")
+            self.update_message("Starting B String...")
             self.update_message(str(b_string))
             self.send_to_udp(b_string)
         if string == "all":
