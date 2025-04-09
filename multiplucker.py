@@ -11,6 +11,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pythonosc.udp_client import SimpleUDPClient
 
+ip = "127.0.0.1"
+port = 5005
+
+client = SimpleUDPClient(ip, port)
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -199,7 +203,8 @@ class Ui_MainWindow(object):
         pass
     
     def send_to_udp(self, arr):
-        
+        print(f"Sending message to /Start: {arr}")
+        client.send_message("/Start", arr)
         pass
 
 
