@@ -25,7 +25,7 @@ dispatcher.map("/Pluck", handle_pluck)
 # Set up async OSC server
 async def main():
     ip = "127.0.0.1"
-    port = 5005
+    port = 12000
 
     server = AsyncIOOSCUDPServer((ip, port), dispatcher, asyncio.get_event_loop())
     transport, protocol = await server.create_serve_endpoint()

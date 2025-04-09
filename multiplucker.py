@@ -240,7 +240,7 @@ class Ui_MainWindow(object):
                 
     
     def send_to_udp(self, arr):
-        print(f"Sending message to /Pluck: {arr}")
+        print(f"Sending message to /Pluck: {pprint.pformat(arr)}")
         client.send_message("/Pluck", arr)
 
 
