@@ -14,6 +14,13 @@ def handle_start(address, *args):
 
 def handle_pluck(address, *args):
     print(f"Received {address}: {args}")
+
+def handle_chord(address, *args):
+    print(f"Received {address}: {args}")
+
+def handle_strum(address, *args):
+    print(f"Received {address}: {args}")
+    
 # Create dispatcher and map OSC addresses
 dispatcher = Dispatcher()
 dispatcher.map("/hello", handle_hello)
@@ -21,6 +28,8 @@ dispatcher.map("/number", handle_number)
 dispatcher.map("/number", handle_number)
 dispatcher.map("/Start", handle_start)
 dispatcher.map("/Pluck", handle_pluck)
+dispatcher.map("/Chord", handle_chord)
+dispatcher.map("/Strum", handle_strum)
 
 # Set up async OSC server
 async def main():

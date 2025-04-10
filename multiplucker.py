@@ -19,6 +19,8 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(709, 488)
+        self.default_chord = [["On", 0.0]]
+        self.default_strum = [["UP", 0.0]]
         self.e_melody = [[41, 1.0, 5, 0.0], [42, 1.0, 5, 1.0], [44, 1.0, 5, 2.0], [46, 1.0, 5, 3.0]]
         self.d_melody = [[51, 1.0, 5, 0.0], [52, 1.0, 5, 1.0], [54, 1.0, 5, 2.0], [56, 1.0, 5, 3.0]]
         self.b_melody = [[59, 1.0, 5, 0.0], [60, 1.0, 5, 1.0], [62, 1.0, 5, 2.0], [64, 1.0, 5, 3.0]]
@@ -240,7 +242,12 @@ class Ui_MainWindow(object):
                 
     
     def send_to_udp(self, arr):
+        self.default_chord[0][1] = arr[len(arr)-1][3] + 1
+        print(f"Sending message to /Chord: {self.default_chord}")
+        print(f"Sending message to /Strum: {self.default_strum}")
         print(f"Sending message to /Pluck: {pprint.pformat(arr)}")
+        client.send_message("/Chord", self.default_chord)
+        client.send_message("/Strum", self.default_strum)
         client.send_message("/Pluck", arr)
 
 
